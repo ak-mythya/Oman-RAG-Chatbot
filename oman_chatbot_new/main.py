@@ -4,8 +4,8 @@ Entry point for the advanced RAG chatbot.
 
 from .orchestration.graph_assembly import app
 
-def run_advanced_rag_pipeline(question: str) -> str:
-    inputs = {"keys": {"question": question}}
+def run_advanced_rag_pipeline(question: str, session_id: str) -> str:
+    inputs = {"keys": {"question": question, "session_id": session_id}}
     final_answer = "No final generation produced."
     
     for output in app.stream(inputs):
@@ -15,8 +15,8 @@ def run_advanced_rag_pipeline(question: str) -> str:
     return final_answer
 
 def main():
-    user_question = "You are such a waste"
-    answer = run_advanced_rag_pipeline(user_question)
+    user_question = "Who is Modi?"
+    answer = run_advanced_rag_pipeline(user_question, "125")
     print("Final Answer:\n", answer)
 
 if __name__ == "__main__":

@@ -1,9 +1,3 @@
-"""
-Module: general_out_of_scope.py
-Contains two classes for handling general and out-of-scope queries
-in the Langgraph pipeline. Both classes conform to a run(state) -> state interface.
-"""
-
 import logging
 import json
 from typing import Dict
@@ -21,41 +15,44 @@ class GeneralQueryNode:
         self.prompt_path = current_dir.parent.parent / "system_prompts" / "general_responses.txt"
         
     def run(self, state: Dict) -> Dict:
-        question = state["keys"].get("question", "").strip()
-        chat_history = state["keys"].get("chat_history", "").strip()
+        logging.info("Handling general queries.")
 
-        logging.info(f"Handling general query: {question}")
+        sub_query_mapping = state.setdefault("keys", {}).setdefault("sub_query_mapping", {})
+        classified_sub_queries = sub_query_mapping.get("classified_sub_queries", [])
 
-        try:
-            with open(self.prompt_path, "r") as f:
-                general_prompt = f.read()
-        except Exception as e:
-            logging.error(f"Error reading general response prompt file: {e}")
-            general_prompt = ""
+        # For each classified sub-query, generate a response
+        for sq_data in classified_sub_queries:
+            sq_text = sq_data.get("completed_query", "")
+            classification = sq_data.get("classification", "out-of-scope")
+            
+            if classification == "general":
+                logging.info(f"Handling general sub-query: {sq_text}")
+                
+                try:
+                    with open(self.prompt_path, "r") as f:
+                        general_prompt = f.read()
+                except Exception as e:
+                    logging.error(f"Error reading general response prompt file: {e}")
+                    general_prompt = ""
+                
+                prompt = general_prompt.format(user_query=sq_text)
 
-        prompt = general_prompt.format(user_query=question)
+                try:
+                    llm_response = llama_llm.invoke(([("system", prompt)]))
+                    llm_response_text = llm_response.content
+                except Exception as e:
+                    logging.error(f"Error generating general sub-query response: {e}")
+                    llm_response_text = "I'm sorry, I encountered an issue generating a response."
 
-        try:
-            llm_response = llama_llm.invoke(([("system", prompt)]))
-            llm_response_text = llm_response.content
-        except Exception as e:
-            logging.error(f"Error generating general query response: {e}")
-            llm_response_text = "I'm sorry, I encountered an issue generating a response."
+                # Store response in the sub-query answers
+                sq_data["response"] = llm_response_text
+
+        # Update the state with the responses for each general sub-query
+        state["keys"]["sub_query_mapping"]["sub_query_answers"] = [
+            {"completed_query": sq.get("completed_query", ""), "response": sq.get("response", "")}
+            for sq in classified_sub_queries if sq.get("response")
+        ]
         
-        # Ensure sub_query_mapping exists
-        keys = state.setdefault("keys", {})
-        sub_query_mapping = keys.setdefault("sub_query_mapping", {
-            "original_query": question,
-            "sub_queries": [],
-            "sub_query_answers": []
-        })
-        
-        # Append the response to sub_query_answers
-        sub_query_mapping["sub_query_answers"].append({
-            "completed_query": question,
-            "response": llm_response_text
-        })
-
         return state
 
 
@@ -69,38 +66,42 @@ class OutOfScopeQueryNode:
         self.prompt_path = current_dir.parent.parent / "system_prompts" / "out-of-scope.txt"
 
     def run(self, state: Dict) -> Dict:
-        question = state["keys"].get("question", "").strip()
-        chat_history = state["keys"].get("chat_history", "").strip()
+        logging.warning("Handling out-of-scope queries.")
 
-        logging.warning(f"Out-of-scope query detected: {question}")
+        sub_query_mapping = state.setdefault("keys", {}).setdefault("sub_query_mapping", {})
+        classified_sub_queries = sub_query_mapping.get("classified_sub_queries", [])
 
-        try:
-            with open(self.prompt_path, "r") as f:
-                out_of_scope_prompt = f.read()
-        except Exception as e:
-            logging.error(f"Error reading out-of-scope prompt file: {e}")
-            out_of_scope_prompt = ""
+        # For each classified sub-query, generate a response
+        for sq_data in classified_sub_queries:
+            sq_text = sq_data.get("completed_query", "")
+            classification = sq_data.get("classification", "out-of-scope")
+            
+            if classification == "out-of-scope":
+                logging.info(f"Handling out-of-scope sub-query: {sq_text}")
+                
+                try:
+                    with open(self.prompt_path, "r") as f:
+                        out_of_scope_prompt = f.read()
+                except Exception as e:
+                    logging.error(f"Error reading out-of-scope response prompt file: {e}")
+                    out_of_scope_prompt = ""
 
-        prompt = out_of_scope_prompt.format(user_query=question)
+                prompt = out_of_scope_prompt.format(user_query=sq_text)
 
-        try:
-            llm_response = llama_llm.invoke(([("system", prompt)]))
-            llm_response_text = llm_response.content
-        except Exception as e:
-            logging.error(f"Error generating out-of-scope response: {e}")
-            llm_response_text = "I'm sorry, but I can't provide information on that topic."
-        
-        # Ensure sub_query_mapping exists
-        keys = state.setdefault("keys", {})
-        sub_query_mapping = keys.setdefault("sub_query_mapping", {
-            "original_query": question,
-            "sub_queries": [],
-            "sub_query_answers": []
-        })
+                try:
+                    llm_response = llama_llm.invoke(([("system", prompt)]))
+                    llm_response_text = llm_response.content
+                except Exception as e:
+                    logging.error(f"Error generating out-of-scope sub-query response: {e}")
+                    llm_response_text = "I'm sorry, but I can't provide information on that topic."
 
-        sub_query_mapping["sub_query_answers"].append({
-            "completed_query": question,
-            "response": llm_response_text
-        })
+                # Store response in the sub-query answers
+                sq_data["response"] = llm_response_text
+
+        # Update the state with the responses for each out-of-scope sub-query
+        state["keys"]["sub_query_mapping"]["sub_query_answers"] = [
+            {"completed_query": sq.get("completed_query", ""), "response": sq.get("response", "")}
+            for sq in classified_sub_queries if sq.get("response")
+        ]
 
         return state
