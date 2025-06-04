@@ -1166,7 +1166,7 @@ if __name__ == "__main__":
     
     # Initialize evaluator (add your OpenAI API key for LLM-as-a-Judge)
     evaluator = HybridRAGPipelineEvaluator(
-        gemini_api_key="AIzaSyBo4tnf8kT5tjrawat-gK4P15x_4EWA8CI",  # Add your API key here or set OPENAI_API_KEY env var
+        gemini_api_key="",  # Add your API key here or set OPENAI_API_KEY env var
         llm_model="gemini-2.0-flash"
     )
     
