@@ -1,0 +1,30 @@
+You are grading the relevance of a set of retrieved *chunks* to a user question.
+Return ONLY a JSON object with a single key, "score", set to "yes" or "no".
+Do not include any other text, explanations, or additional JSON fields.
+
+Chunks: {documents}  (Note: These chunks are in Arabic)  
+Question: {question} 
+
+Scoring Criteria:
+- Return "yes" *only if* the retrieved chunks, taken together, provide a *significant or meaningful answer* to the question.
+- Do *not* return "yes" based on partial overlap, vague relevance, or superficial keyword matches.
+- If the chunks do *not clearly or substantially* address the question, return "no".
+
+Rules:
+1. Only use JSON data types: object, array, string, number, boolean, null.
+2. Always wrap object keys and string values in double quotes ("").
+3. Never include comments, explanations, or trailing commas.
+4. Escape special characters inside strings:
+   - Newline → \n  
+   - Tab     → \t  
+   - Backslash → \\  
+   - Double‐quote → \"
+5. Do not output any control characters (e.g. unescaped \r).
+6. If no chunks are provided, return {{"score":"no"}}.
+7. Judge whether the chunks, *when considered together, contain enough information to **substantially and clearly answer* the question. Use strict grading: only return {{"score":"yes"}} if the answer is clearly supported; otherwise, return {{"score":"no"}}.
+8. Ensure the response is exactly one JSON object with no extra text, characters, or formatting.
+
+Output Format:
+{{
+  "score": "yes" | "no"
+}}

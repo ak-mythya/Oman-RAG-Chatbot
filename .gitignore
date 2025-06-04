@@ -1,0 +1,7 @@
+.dockerignore
+.gcloudignore
+cloudbuilt.yaml
+Dockerfile.app
+Dockerfile.base
+Dockerfile.cloud
+README_DOCKER.md
