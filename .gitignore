@@ -5,3 +5,4 @@ Dockerfile.app
 Dockerfile.base
 Dockerfile.cloud
 README_DOCKER.md
+key.json
