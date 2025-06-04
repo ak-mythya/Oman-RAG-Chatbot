@@ -1,6 +1,6 @@
 .dockerignore
 .gcloudignore
-cloudbuilt.yaml
+cloudbuild.yaml
 Dockerfile.app
 Dockerfile.base
 Dockerfile.cloud
