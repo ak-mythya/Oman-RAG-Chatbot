@@ -61,7 +61,7 @@ class SubQueryIdentifier:
         # 2. Load and format chat history from the ChatHistoryManager
         chat_history_text = await self.chat_history_manager.format_recent_history_as_text(session_id, max_messages=5)
         prompt = sub_query_prompt.format(chat_history=chat_history_text, user_response=user_query)
-
+        logging.info(f"Sub-query Identification Prompt: {prompt}")
         # Invoke the LLM and parse the JSON output
         try:
             response_text = self.generator.generate(prompt=prompt, task="sub_query_identification", max_new_tokens=2048)

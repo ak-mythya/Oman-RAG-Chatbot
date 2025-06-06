@@ -7,16 +7,8 @@ Query Processing Rules:
 2.  Split Compound Inputs: If the user query contains multiple distinct parts (questions, statements, greetings, requests) separated by conjunctions (مثل "و", "أو"), punctuation (مثل الفاصلة المنقوطة, علامات الاستفهام المتعددة في مدخل واحد), or clear shifts in topic, break them down into individual sub-queries.
 3.  Complete Ambiguous/Incomplete Queries: If a user query or a part of it is unclear or incomplete based on the current turn alone, use the chat history to infer the user's intent and complete the query into a standalone, clear question.
 4.  Handle Complex Domain Queries: If a query or a part of a query is complex (e.g., asks for multiple specific pieces of information about an entity, or involves comparing entities) and requires information retrieval from the domain documents, break it down into simpler, distinct questions covering the essential aspects that the RAG system can process individually. For comparison queries (e.g., using terms like "فرق", "اختلاف", "مقارنة"), you should typically generate separate queries for information about each entity being compared, in addition to the original comparison query itself, to ensure comprehensive information is gathered.
-5.  Justification: For each identified sub-query, provide a brief justification explaining why it was identified (e.g., "Distinct question", "Part of compound input", "Comparison query breakdown") and indicating its likely nature based on the full classification set (`in-scope`, `out-of-scope`, `general`, `exit-chat`, `human-agent`, `service-application`).
+5.  Justification: For each identified sub-query, provide a brief justification explaining why it was identified (e.g., "Distinct question", "Part of compound input", "Comparison query breakdown").
 
-Classification Categories (for Justification):
--   `in-scope`: Pertains to Omani Ministry of Social Development laws, regulations, and services based on provided documents (Civil Associations, Social Assistance, Disability Services, Expatriate Clubs, Working Committees/Volunteer Teams).
--   `out-of-scope`: Unrelated to the domain of the provided documents.
--   `general`: Greetings, thanks, simple feedback.
--   `exit-chat`: Explicit request to end the conversation.
--   `human-agent`: Request to speak to a human, sensitive disclosure, or sustained negative interaction (as defined in the classification prompt).
--   `service-application`: Query about the process of applying for, tracking, paying for a government service request (as defined by trigger words in the classification prompt).
--   `child-abuse`: The user explicitly asks to report child abuse or seeks information on how to do so. This includes requests for reporting procedures, contact details, or expressing intent to file a report about physical, emotional, sexual abuse, neglect, or exploitation of a child.
 
 Examples:
 
@@ -25,37 +17,37 @@ Chat History: [{{"role": "user", "content": "أنا مهتم بجمعيات ال
 User Query: "وما هي اللوائح التي تنظمها؟ وهل يوجد دليل لحوكمتها؟ وداعا."
 Sub-query 1:
   completed_query: "ما هي اللوائح التي تنظم الجمعيات الأهلية؟"
-  justification: "Part of compound input; completed using chat history context; in-scope question."
+  justification: "Part of compound input; completed using chat history context."
 Sub-query 2:
   completed_query: "هل يوجد دليل لحوكمة الجمعيات الأهلية؟"
-  justification: "Part of compound input; in-scope question."
+  justification: "Part of compound input."
 Sub-query 3:
   completed_query: "وداعا"
-  justification: "Part of compound input; identified as an exit-chat intent."
+  justification: "Part of compound input."
 
 Example 2: Complex Comparison Handled
 User Query: "ما الفرق بين المساعدات الطارئة والمساعدات الدورية للمرضى؟"
 Sub-query 1:
   completed_query: "ما هي معلومات عن المساعدات الطارئة؟"
-  justification: "Breakdown of a comparison query; aims to get info on the first entity; in-scope question."
+  justification: "Breakdown of a comparison query; aims to get info on the first entity."
 Sub-query 2:
   completed_query: "ما هي معلومات عن المساعدات الدورية للمرضى؟"
-  justification: "Breakdown of a comparison query; aims to get info on the second entity; in-scope question."
+  justification: "Breakdown of a comparison query; aims to get info on the second entity."
 Sub-query 3:
   completed_query: "ما الفرق بين المساعدات الطارئة والمساعدات الدورية للمرضى؟"
-  justification: "Original comparison query identified; in-scope question."
+  justification: "Original comparison query identified."
 
 Example 3: Service Application Query
 User Query: "كيف أتتبع حالة طلب بطاقة الإعاقة رقم 12345؟"
 Sub-query 1:
   completed_query: "كيف أتتبع حالة طلب بطاقة الإعاقة رقم 12345؟"
-  justification: "Distinct question identified; service-application query."
+  justification: "Distinct question identified."
 
 Example 4: Human Agent Query
 User Query: "أحتاج أتكلم مع موظف بخصوص مشكلتي."
 Sub-query 1:
   completed_query: "أحتاج أتكلم مع موظف بخصوص مشكلتي."
-  justification: "Distinct request identified; human-agent intent."
+  justification: "Distinct request identified."
 
 Output Format Rules:
 1.  Output must be valid JSON.

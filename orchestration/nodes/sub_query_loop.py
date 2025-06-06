@@ -147,11 +147,11 @@ class SubQueryLoop:
         # 3) Update each sub-query with filtered docs, count, and answerable flag
         all_filtered_docs = []
         new_results = []
-        for (filtered_docs, count, score), sq_data in zip(graded_results, in_scope_sub_queries):
+        for (filtered_docs, count, grading_details), sq_data in zip(graded_results, in_scope_sub_queries):
             sq_data["documents"]      = filtered_docs
             sq_data["relevant_count"] = count
             # Tag as answerable if we met the threshold
-            sq_data["answerable"]     = score == "yes"
+            sq_data["answerable"]     = (grading_details.get("step2_collective_score") == "yes")
 
             all_filtered_docs.extend(filtered_docs)
             new_results.append((filtered_docs, count))

@@ -6,7 +6,7 @@ from pathlib import Path
 from model import TextGenerator
 from sentence_transformers import SentenceTransformer, util
 from chat_history_manager import ChatHistoryManager
-from config import EMBEDDING_MODEL
+from config import EMBEDDING_MODEL, embeddings
 import re
 
 # Intent examples for similarity-based classification
@@ -46,25 +46,51 @@ RESPONSES = {
 
 # SENT_DIR = snapshot("models--sentence-transformers--paraphrase-multilingual-MiniLM-L12-v2")
 
-EMBEDDING_MODEL = EMBEDDING_MODEL
+# EMBEDDING_MODEL = EMBEDDING_MODEL
+# INTENT_EMBEDDINGS = {
+#     intent: EMBEDDING_MODEL.encode(examples, convert_to_tensor=True)
+#     for intent, examples in INTENT_EXAMPLES.items()
+# }
+
+# def match_intents_batch(texts: List[str]) -> List[Optional[str]]:
+#     results = []
+#     for text in texts:
+#         query_embedding = EMBEDDING_MODEL.encode(text, convert_to_tensor=True)
+#         best_intent = None
+#         best_score = 0.0
+#         for intent, example_embeddings in INTENT_EMBEDDINGS.items():
+#             scores = util.cos_sim(query_embedding, example_embeddings)
+#             max_score = scores.max().item()
+#             if max_score > best_score:
+#                 best_score = max_score
+#                 best_intent = intent
+#         results.append(best_intent if best_score > 0.6 else None)
+#     return results
+
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
+# Precompute intent embeddings as arrays
 INTENT_EMBEDDINGS = {
-    intent: EMBEDDING_MODEL.encode(examples, convert_to_tensor=True)
+    intent: np.array([embeddings.embed_query(text) for text in examples])
     for intent, examples in INTENT_EXAMPLES.items()
 }
 
 def match_intents_batch(texts: List[str]) -> List[Optional[str]]:
     results = []
     for text in texts:
-        query_embedding = EMBEDDING_MODEL.encode(text, convert_to_tensor=True)
+        query_embedding = np.array(embeddings.embed_query(text))
         best_intent = None
         best_score = 0.0
         for intent, example_embeddings in INTENT_EMBEDDINGS.items():
-            scores = util.cos_sim(query_embedding, example_embeddings)
-            max_score = scores.max().item()
+            scores = cosine_similarity([query_embedding], example_embeddings)
+            max_score = scores.max()
             if max_score > best_score:
                 best_score = max_score
                 best_intent = intent
-        results.append(best_intent if best_score > 0.6 else None)
+        results.append(best_intent if best_score > 0.75 else None)  # Raised threshold
+        print(f"Score for '{text}' vs {intent}: {max_score:.3f}")
+        
     return results
 
 class GeneralQueryNode:

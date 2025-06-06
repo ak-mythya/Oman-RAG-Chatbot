@@ -283,23 +283,26 @@ class Generation:
                 for sq, gen in zip(answerable_sqs, generations):
                     if contains_chinese(gen):
                         try:
-                            translation_prompt = (
-                                "Translate the following Chinese text to Arabic. "
-                                "Retain all the information and meaning. "
-                                "Return only valid JSON in the following format: {\"translation\": \"<Arabic translation>\"} "
-                                "Rules: "
-                                "1. Only use JSON data types: object, array, string, number, boolean, null. "
-                                "2. Always wrap object keys and string values in double quotes (`\"`). "
-                                "3. Never include comments, explanations, or trailing commas. "
-                                "4. Escape special characters inside strings: "
-                                "- Newline → `\n` "
-                                "- Tab     → `\t` "
-                                "- Backslash → `\\` "
-                                "- Double‐quote → `\"` "
-                                "5. Do not output any control characters (e.g. unescaped `\r`). "
-                                "*Always output only the JSON structure"
-                                "with no extra explanation or text.\n\n" + gen
-                            )
+                            translation_prompt = f"""Translate the following Chinese text to Arabic.
+                            Retain all the information and meaning.
+                            Rules: 
+                                1. Only use JSON data types: object, array, string, number, boolean, null.
+                                2. Always wrap object keys and string values in double quotes (`\"`).
+                                3. Never include comments, explanations, or trailing commas.
+                                4. Escape special characters inside strings: "
+                                - Newline → `\n`
+                                - Tab     → `\t`
+                                - Backslash → `\\`
+                                - Double‐quote → `\"`
+                                5. Do not output any control characters (e.g. unescaped `\r`).
+                                *Always output only the JSON structure
+                            "with no extra explanation or text.\n\n"  
+                            
+                            "Here is the text that you have to translate" +
+                            {gen}
+
+                            Return only valid JSON in the following format: {{\"translation\": \"<Arabic translation>\"}}
+                            """
                             logging.info(f"translation_prompt={translation_prompt}")
                             translated = self.generator.generate(translation_prompt, task="translation")
                             logging.info(f"translated={translated}")

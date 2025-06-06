@@ -11,20 +11,74 @@ Scoring Criteria:
 - If the chunks do *not clearly or substantially* address the question, return "no".
 
 Rules:
-1. Only use JSON data types: object, array, string, number, boolean, null.
-2. Always wrap object keys and string values in double quotes ("").
-3. Never include comments, explanations, or trailing commas.
-4. Escape special characters inside strings:
-   - Newline → \n  
-   - Tab     → \t  
-   - Backslash → \\  
-   - Double‐quote → \"
-5. Do not output any control characters (e.g. unescaped \r).
-6. If no chunks are provided, return {{"score":"no"}}.
-7. Judge whether the chunks, *when considered together, contain enough information to **substantially and clearly answer* the question. Use strict grading: only return {{"score":"yes"}} if the answer is clearly supported; otherwise, return {{"score":"no"}}.
-8. Ensure the response is exactly one JSON object with no extra text, characters, or formatting.
+1. Only use JSON data types: object, array, string, number, boolean, null..
+2. Never include comments, explanations, or trailing commas.
+3. If no chunks are provided, return {{"score":"no"}}.
+4. Ensure the response is exactly one JSON object with no extra text, characters, or formatting.
+5. DO NOT PROVIDE ANY TEXT EXCEPT THE BELOW PROVIDED OUTPUT FORMAT.
 
-Output Format:
+Output JSON Format:
+Provide the output only in the below format:
 {{
   "score": "yes" | "no"
 }}
+
+
+Examples:
+
+Example 1:
+Input:
+Chunks:
+"""
+يحق لذوي الإعاقة الحصول على بطاقة الخدمات المتكاملة من وزارة التضامن الاجتماعي، والتي تخولهم الحصول على مزايا متعددة مثل التأمين الصحي، الدعم النقدي، والدمج في التعليم والعمل.
+"""
+Question:
+ما هي المزايا التي تقدمها بطاقة الخدمات المتكاملة لذوي الإعاقة؟
+
+Output:
+{{"score":"yes"}}
+
+---
+
+Example 2:
+Input:
+Chunks:
+"""
+تقدم وزارة الصحة خدمات الفحص المبكر لحديثي الولادة للكشف عن أمراض وراثية. يشمل ذلك التحاليل المخبرية والفحوصات السريرية.
+"""
+Question:
+هل توفر الدولة دعماً مادياً لذوي الإعاقة؟
+
+Output:
+{{"score":"no"}}
+
+---
+
+Example 3:
+Input:
+Chunks:
+"""
+للحصول على المساعدة الاجتماعية، يجب تقديم طلب رسمي مرفق بالمستندات المطلوبة مثل البطاقة الشخصية وإثبات الدخل. تُراجع الطلبات من قبل الإدارة المختصة خلال 15 يوماً.
+"""
+Question:
+ما هي إجراءات التقديم للحصول على مساعدة اجتماعية؟
+
+Output:
+{{"score":"yes"}}
+
+---
+
+Example 4 (No):
+Input:
+Chunks:
+"""
+التضامن الاجتماعي يهتم بالأسر الفقيرة من خلال برامج سكنية وتعليمية للأطفال. كما يتم تنظيم ورش عمل للتمكين الاقتصادي.
+"""
+Question:
+ما هو الحد الأدنى للدخل المطلوب للحصول على بطاقة الإعاقة؟
+
+Output:
+{{"score":"no"}}
+
+---
+Your role is to grade the provided chunks in yes or no based on the provided Scoring Criteria and provide the output in the provided Output JSON Format.
