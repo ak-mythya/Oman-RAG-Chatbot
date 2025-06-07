@@ -190,7 +190,16 @@ def contains_chinese(text: str) -> bool:
         ):
             return True
     return False
-
+def extract_json_from_text(text):
+    try:
+        match = re.search(r'\{.*\}', text, re.DOTALL)
+        if match:
+            return json.loads(match.group())
+        else:
+            return None
+    except json.JSONDecodeError as e:
+        logging.error(f"JSON decode error: {e}")
+        return None
 def extract_translation_json(text: str) -> str:
     try:
         # match = re.search(r'{\s*"translation"\s*:\s*"(.?)"\s}', text, re.DOTALL)
@@ -281,27 +290,36 @@ class Generation:
                 logging.info(f"[Gen] END batch generation at {end:.3f} (took {end-start:.3f}s)")
 
                 for sq, gen in zip(answerable_sqs, generations):
+                    logging.info(f"\n\n\n\nGen:{gen} \n\n\n\n Type: {type(gen)} \n\n\n\n")
                     if contains_chinese(gen):
+                        gen = extract_json_from_text(gen)
                         try:
-                            translation_prompt = f"""Translate the following Chinese text to Arabic.
-                            Retain all the information and meaning.
-                            Rules: 
-                                1. Only use JSON data types: object, array, string, number, boolean, null.
-                                2. Always wrap object keys and string values in double quotes (`\"`).
-                                3. Never include comments, explanations, or trailing commas.
-                                4. Escape special characters inside strings: "
-                                - Newline → `\n`
-                                - Tab     → `\t`
-                                - Backslash → `\\`
-                                - Double‐quote → `\"`
-                                5. Do not output any control characters (e.g. unescaped `\r`).
-                                *Always output only the JSON structure
-                            "with no extra explanation or text.\n\n"  
-                            
-                            "Here is the text that you have to translate" +
-                            {gen}
+                            translation_prompt = f"""Translate the provided Chinese text to Arabic.
+                            Retain all the information and meaning. DO NOT HALLUCINATE.
+                            Return only valid OUTPUT JSON in the following format: {{"translation": "<Arabic translation of the provided text>"}}
 
-                            Return only valid JSON in the following format: {{\"translation\": \"<Arabic translation>\"}}
+                            Examples:
+                            Example 1:
+                            Input:
+                            "你好，世界！"
+                            Output:
+                            {{"translation":"مرحباً بالعالم!"}}
+
+                            Example 2:
+                            Input:
+                            "今天的天气很好，我们去公园吧。"
+                            Output:
+                            {{"translation":"الطقس اليوم جميل، دعنا نذهب إلى الحديقة."}}
+
+                            Example 3:
+                            Input:
+                            "请填写此表格并签名。"
+                            Output:
+                            {{"translation":"يرجى تعبئة هذا النموذج وتوقيعه."}}
+                            
+
+                            Here is the text that you have to translate: {gen["final_response"]}.
+                            Remember your role is to just translate the provided text to Arabic and return the OUTPUT JSON.
                             """
                             logging.info(f"translation_prompt={translation_prompt}")
                             translated = self.generator.generate(translation_prompt, task="translation")
@@ -309,12 +327,15 @@ class Generation:
                             if isinstance(translated, list):
                                 translated = translated[0]
                             response_text = extract_translation_json(translated)
+
                             logging.info(f"response_text_translated={response_text}")
                         except Exception as e:
                             logging.error(f"Error during Chinese-to-Arabic translation: {e}")
-                            response_text = "تعذر ترجمة المحتوى من الصينية إلى العربية."
+                            response_text = "يمكنك زيارة الموقع الرسمي لوزارة التنمية الاجتماعية للاطلاع على المزيد عبر الرابط التالي: https://gov.om/ministry-of-social-development"
                     else:
-                        response_text = gen
+                        gen = extract_json_from_text(gen)
+                        logging.info(f"\n\n\n\n\n Sub Query: {sq} and Response: {gen}\n\n\n\n\n")
+                        response_text = gen["final_response"]
 
                     generated_responses.append({
                         "completed_query": sq["completed_query"],
@@ -323,7 +344,7 @@ class Generation:
                     })
 
             for sq in unanswerable_sqs:
-                apology = "عذرًا، لا أستطيع الإجابة على هذا السؤال في الوقت الحالي."
+                apology = "لم يتم العثور على أي معلومات بهذا الشأن، يمكنك زيارة الموقع الرسمي لوزارة التنمية الاجتماعية عبر الرابط التالي: https://gov.om/ministry-of-social-development"              
                 generated_responses.append({
                     "completed_query": sq["completed_query"],
                     "response": apology,
@@ -358,34 +379,51 @@ class Generation:
             end = time.time()
             logging.info(f"[Gen] END original query generation at {end:.3f} (took {end-start:.3f}s)")
 
-            response_text = extract_json_or_return(generation)
-            if contains_chinese(response_text):
+            gen = extract_json_or_return(generation)
+            gen_json = extract_json_from_text(gen)
+
+            if contains_chinese(gen):
                 try:
-                    translation_prompt = (
-                                "Translate the following Chinese text to Arabic. "
-                                "Retain all the information and meaning. "
-                                "Return only valid JSON in the following format: {\"translation\": \"<Arabic translation>\"} "
-                                "Rules: "
-                                "1. Only use JSON data types: object, array, string, number, boolean, null. "
-                                "2. Always wrap object keys and string values in double quotes (`\"`). "
-                                "3. Never include comments, explanations, or trailing commas. "
-                                "4. Escape special characters inside strings: "
-                                "- Newline → `\n` "
-                                "- Tab     → `\t` "
-                                "- Backslash → `\\` "
-                                "- Double‐quote → `\"` "
-                                "5. Do not output any control characters (e.g. unescaped `\r`). "
-                                "*Always output only the JSON structure"
-                                "with no extra explanation or text.\n\n" + gen
-                            )
+                    translation_prompt = f"""Translate the provided Chinese text to Arabic.
+                            Retain all the information and meaning. DO NOT HALLUCINATE.
+                            Return only valid OUTPUT JSON in the following format: {{"translation": "<Arabic translation of the provided text>"}}
+
+                            Examples:
+                            Example 1:
+                            Input:
+                            "你好，世界！"
+                            Output:
+                            {{"translation":"مرحباً بالعالم!"}}
+
+                            Example 2:
+                            Input:
+                            "今天的天气很好，我们去公园吧。"
+                            Output:
+                            {{"translation":"الطقس اليوم جميل، دعنا نذهب إلى الحديقة."}}
+
+                            Example 3:
+                            Input:
+                            "请填写此表格并签名。"
+                            Output:
+                            {{"translation":"يرجى تعبئة هذا النموذج وتوقيعه."}}
+                            
+
+                            Here is the text that you have to translate: {gen_json["final_response"]}.
+                            Remember your role is to just translate the provided text to Arabic and return the OUTPUT JSON.
+                            """
+                    logging.info(f"translation_prompt={translation_prompt}")
                     translated = self.generator.generate(translation_prompt, task="translation")
+                    logging.info(f"translated={translated}")
                     if isinstance(translated, list):
                         translated = translated[0]
                     response_text = extract_translation_json(translated)
+                    logging.info(f"response_text_translated={response_text}")
                 except Exception as e:
-                    logging.error(f"Error during Chinese-to-Arabic fallback translation: {e}")
-                    response_text = "تعذر ترجمة المحتوى من الصينية إلى العربية."
-
+                    logging.error(f"Error during Chinese-to-Arabic translation: {e}")
+                    response_text = "يمكنك زيارة الموقع الرسمي لوزارة التنمية الاجتماعية للاطلاع على المزيد عبر الرابط التالي: https://gov.om/ministry-of-social-development"
+                 
+            else:
+                response_text = gen_json["final_response"]
             generated_responses.append({
                 "completed_query": original_query,
                 "response": response_text,

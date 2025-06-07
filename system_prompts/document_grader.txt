@@ -68,7 +68,7 @@ Output:
 
 ---
 
-Example 4 (No):
+Example 4:
 Input:
 Chunks:
 """

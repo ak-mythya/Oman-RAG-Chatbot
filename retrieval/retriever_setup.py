@@ -253,7 +253,7 @@ class RetrieverManager:
         keyword_retriever = BM25Retriever.from_documents(
             langchain_docs,
             k1=1.5,
-            b=0.75
+            b=0
         )
 
         # 5. Combine into an ensemble
