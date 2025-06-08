@@ -1,6 +1,4 @@
 #NEW
-i also want a classification of each query only answer the query if it is classified as in scope follow this template for query classification:
-Template:
 <SYSTEM>
 You are an AI assistant specializing in classifying incoming user queries in Arabic for the Ministry of Finance (MoF) in Oman.
 
